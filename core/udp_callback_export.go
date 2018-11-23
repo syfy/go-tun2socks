@@ -29,7 +29,6 @@ func UDPRecvFn(arg unsafe.Pointer, pcb *C.struct_udp_pcb, p *C.struct_pbuf, addr
 
 	connId := udpConnId{
 		src: srcAddr.String(),
-		dst: dstAddr.String(),
 	}
 	conn, found := udpConns.Load(connId)
 	if !found {
@@ -40,9 +39,7 @@ func UDPRecvFn(arg unsafe.Pointer, pcb *C.struct_udp_pcb, p *C.struct_pbuf, addr
 		conn, err = NewUDPConnection(pcb,
 			udpConnectionHandler,
 			*addr,
-			*destAddr,
-			port,
-			destPort)
+			port)
 		if err != nil {
 			return
 		}
@@ -50,5 +47,5 @@ func UDPRecvFn(arg unsafe.Pointer, pcb *C.struct_udp_pcb, p *C.struct_pbuf, addr
 	}
 
 	buf := (*[1 << 30]byte)(unsafe.Pointer(p.payload))[:int(p.tot_len):int(p.tot_len)]
-	conn.(Connection).Receive(buf)
+	conn.(UDPConnection).ReceiveTo(buf, dstAddr)
 }

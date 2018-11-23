@@ -22,13 +22,21 @@ type ConnectionHandler interface {
 	LocalDidClose(conn Connection)
 }
 
+type UDPConnectionHandler interface {
+	// Connect connects the proxy server.
+	Connect(conn UDPConnection, target net.Addr) error
+
+	// DidReceive will be called when data arrives from TUN.
+	DidReceiveTo(conn UDPConnection, data []byte, addr net.Addr) error
+}
+
 var tcpConnectionHandler ConnectionHandler
-var udpConnectionHandler ConnectionHandler
+var udpConnectionHandler UDPConnectionHandler
 
 func RegisterTCPConnectionHandler(h ConnectionHandler) {
 	tcpConnectionHandler = h
 }
 
-func RegisterUDPConnectionHandler(h ConnectionHandler) {
+func RegisterUDPConnectionHandler(h UDPConnectionHandler) {
 	udpConnectionHandler = h
 }

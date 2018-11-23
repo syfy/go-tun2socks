@@ -48,6 +48,23 @@ func ATYP(b byte) int {
 // Addr represents a SOCKS address as defined in RFC 1928 section 5.
 type Addr []byte
 
+type udpNetAddr struct {
+	network string
+	addr    string
+}
+
+func (a *udpNetAddr) Network() string {
+	return a.network
+}
+
+func (a *udpNetAddr) String() string {
+	return a.addr
+}
+
+func (a Addr) ToNetAddr(network string) net.Addr {
+	return &udpNetAddr{network: network, addr: a.String()}
+}
+
 // String serializes SOCKS address a to string form.
 func (a Addr) String() string {
 	var host, port string

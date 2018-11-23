@@ -8,15 +8,15 @@ import "C"
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"unsafe"
 )
 
 type udpConn struct {
 	pcb        *C.struct_udp_pcb
-	handler    ConnectionHandler
+	handler    UDPConnectionHandler
 	localAddr  net.Addr
-	remoteAddr net.Addr
 	localIP    C.ip_addr_t
 	remoteIP   C.ip_addr_t
 	remotePort C.u16_t
@@ -24,19 +24,16 @@ type udpConn struct {
 	closed     bool
 }
 
-func NewUDPConnection(pcb *C.struct_udp_pcb, handler ConnectionHandler, localIP, remoteIP C.ip_addr_t, localPort, remotePort C.u16_t) (Connection, error) {
+func NewUDPConnection(pcb *C.struct_udp_pcb, handler UDPConnectionHandler, localIP C.ip_addr_t, localPort C.u16_t) (UDPConnection, error) {
 	conn := &udpConn{
-		handler:    handler,
-		pcb:        pcb,
-		localAddr:  ParseUDPAddr(IPAddrNTOA(localIP), uint16(localPort)),
-		remoteAddr: ParseUDPAddr(IPAddrNTOA(remoteIP), uint16(remotePort)),
-		localIP:    localIP,
-		remoteIP:   remoteIP,
-		localPort:  localPort,
-		remotePort: remotePort,
-		closed:     false,
+		handler:   handler,
+		pcb:       pcb,
+		localAddr: ParseUDPAddr(IPAddrNTOA(localIP), uint16(localPort)),
+		localIP:   localIP,
+		localPort: localPort,
+		closed:    false,
 	}
-	err := handler.Connect(conn, conn.RemoteAddr())
+	err := handler.Connect(conn, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +41,9 @@ func NewUDPConnection(pcb *C.struct_udp_pcb, handler ConnectionHandler, localIP,
 }
 
 func (conn *udpConn) RemoteAddr() net.Addr {
-	return conn.remoteAddr
+	log.Printf("call deprecated func RemoteAddr()")
+	// deprecated
+	return nil
 }
 
 func (conn *udpConn) LocalAddr() net.Addr {
@@ -52,10 +51,16 @@ func (conn *udpConn) LocalAddr() net.Addr {
 }
 
 func (conn *udpConn) Receive(data []byte) error {
+	log.Printf("call deprecated func Receive()")
+	// deprecated
+	return nil
+}
+
+func (conn *udpConn) ReceiveTo(data []byte, addr net.Addr) error {
 	if conn.closed {
 		return errors.New("connection closed")
 	}
-	err := conn.handler.DidReceive(conn, data)
+	err := conn.handler.DidReceiveTo(conn, data, addr)
 	if err != nil {
 		return errors.New(fmt.Sprintf("write proxy failed: %v", err))
 	}
@@ -63,14 +68,26 @@ func (conn *udpConn) Receive(data []byte) error {
 }
 
 func (conn *udpConn) Write(data []byte) (int, error) {
+	log.Printf("call deprecated func Write()")
+	// deprecated
+	return 0, nil
+}
+
+func (conn *udpConn) WriteFrom(data []byte, addr net.Addr) (int, error) {
 	if conn.closed {
 		return 0, errors.New("connection closed")
 	}
 	if conn.pcb == nil {
 		return 0, errors.New("nil udp pcb")
 	}
+	remoteIP := addr.(*net.UDPAddr).IP.String()
+	remotePort := addr.(*net.UDPAddr).Port
+	cremoteIP := C.struct_ip_addr{}
+	IPAddrATON(remoteIP, &cremoteIP)
 	buf := C.pbuf_alloc_reference(unsafe.Pointer(&data[0]), C.u16_t(len(data)), C.PBUF_ROM)
-	C.udp_sendto(conn.pcb, buf, &conn.localIP, conn.localPort, &conn.remoteIP, conn.remotePort)
+
+	log.Printf("sending to local from remote: %v", ParseUDPAddr(IPAddrNTOA(cremoteIP), uint16(remotePort)))
+	C.udp_sendto(conn.pcb, buf, &conn.localIP, conn.localPort, &cremoteIP, C.u16_t(remotePort))
 	C.pbuf_free(buf)
 	return len(data), nil
 }
@@ -83,7 +100,6 @@ func (conn *udpConn) Sent(len uint16) error {
 func (conn *udpConn) Close() error {
 	connId := udpConnId{
 		src: conn.LocalAddr().String(),
-		dst: conn.RemoteAddr().String(),
 	}
 	conn.closed = true
 	udpConns.Delete(connId)
