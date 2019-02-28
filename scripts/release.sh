@@ -19,6 +19,7 @@ declare -a executables=(\
 "tun2socks-linux-386" \
 "tun2socks-linux-amd64" \
 "tun2socks-linux-arm64" \
+"tun2socks-linux-arm" \
 "tun2socks-linux-mips" \
 "tun2socks-linux-mips64" \
 "tun2socks-linux-mips64le" \
