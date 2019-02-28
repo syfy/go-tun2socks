@@ -1,5 +1,4 @@
 GOCMD=go
-XGOCMD=xgo
 GOBUILD=$(GOCMD) build
 GORUN=$(GOCMD) run
 GOCLEAN=$(GOCMD) clean
