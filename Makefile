@@ -80,7 +80,9 @@ XBUILD_CMD="cd $(BUILDDIR) && $(XGOCMD) -ldflags $(RELEASE_LDFLAGS) --targets=*/
 RELEASE_CMD="cd $(BUILDDIR) && $(XGOCMD) -ldflags $(RELEASE_LDFLAGS) --targets=linux/amd64,linux/arm64,linux/arm,linux/386,linux/mips,linux/mipsle,linux/mips64,linux/mips64le,windows/*,darwin/* $(CMDDIR)"
 WINDOWS_CMD="cd $(BUILDDIR) && $(XGOCMD) -ldflags $(RELEASE_LDFLAGS) --targets=windows/amd64 $(CMDDIR)"
 
-all: build
+all: 
+	mkdir -p $(BUILDDIR)
+	$(call with_copied_files,$(BUILD_CMD))
 
 build:
 	mkdir -p $(BUILDDIR)
